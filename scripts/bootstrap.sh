@@ -75,7 +75,7 @@ LOG="$HOME/.local/share/mac-setup/logs/ansible_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p "$(dirname "$LOG")"
 export ANSIBLE_LOG_PATH="$LOG"
 
-ansible-playbook main.yml --ask-become-pass --skip-tags post-auth
+ansible-playbook main.yml --skip-tags post-auth
 echo "Phase 1 complete. Log: $LOG"
 
 # ── Pause ─────────────────────────────────────────────────────────────
@@ -89,6 +89,137 @@ read -r -p "  Press Enter when ready... "
 echo ""
 
 # ── Phase 2 ───────────────────────────────────────────────────────────
-ansible-playbook main.yml --ask-become-pass --tags post-auth
+ansible-playbook main.yml --tags post-auth
+
+# ── Migration Report ────────────────────────────────────────────────
+PRIVATE_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/dotfiles-private"
+OLD_INVENTORY="$PRIVATE_DIR/installed_apps.txt"
+REPORT="$HOME/Desktop/migration-report.txt"
+
+{
+  echo "Migration Report — $(date)"
+  echo "════════════════════════════════════════════════════════════"
+  echo ""
+
+  # Capture current state
+  echo "## Currently Installed (/Applications)"
+  ls /Applications/ 2>/dev/null | grep '\.app$' | sort
+  echo ""
+
+  echo "## Currently Installed (/Applications/Setapp)"
+  ls "/Applications/Setapp/" 2>/dev/null | grep '\.app$' | sort || echo "[none]"
+  echo ""
+
+  echo "## App Store Apps"
+  if command -v mas &>/dev/null; then
+    mas list 2>/dev/null || echo "[mas list failed]"
+  else
+    echo "[mas not available]"
+  fi
+  echo ""
+
+  echo "## Homebrew Casks"
+  brew list --cask 2>/dev/null | sort || echo "[none]"
+  echo ""
+
+  # Compare against old machine if inventory exists
+  if [ -f "$OLD_INVENTORY" ]; then
+    echo "════════════════════════════════════════════════════════════"
+    echo "## Comparison with Old Machine"
+    echo ""
+
+    # Extract .app names from old inventory
+    OLD_APPS=$(grep '\.app$' "$OLD_INVENTORY" | sed 's/\.app$//' | sort)
+    NEW_APPS=$(ls /Applications/ /Applications/Setapp/ ~/Applications/ 2>/dev/null \
+               | grep '\.app$' | sed 's/\.app$//' | sort -u)
+
+    MISSING=$(comm -23 <(echo "$OLD_APPS") <(echo "$NEW_APPS"))
+    ADDED=$(comm -13 <(echo "$OLD_APPS") <(echo "$NEW_APPS"))
+
+    if [ -n "$MISSING" ]; then
+      echo "### On old machine but NOT on new (may need manual install):"
+      echo "$MISSING" | while read -r app; do echo "  - $app"; done
+    else
+      echo "### No missing apps — everything from the old machine is present."
+    fi
+    echo ""
+
+    if [ -n "$ADDED" ]; then
+      echo "### On new machine but NOT on old (newly added):"
+      echo "$ADDED" | while read -r app; do echo "  + $app"; done
+    else
+      echo "### No new additions beyond what was on the old machine."
+    fi
+  else
+    echo "(No old-machine inventory found at $OLD_INVENTORY — skipping comparison.)"
+    echo "Run preflight.sh on the old machine first for a full diff."
+  fi
+
+  # ── Settings Post-Check ──────────────────────────────────────────────
+  echo ""
+  echo "════════════════════════════════════════════════════════════"
+  echo "## Settings Verification"
+  echo ""
+  echo "Checking macOS defaults against expected values..."
+  echo ""
+
+  SETTINGS_OK=0
+  SETTINGS_FAIL=0
+
+  check_default() {
+    local domain="$1" key="$2" expected="$3" label="$4"
+    actual=$(defaults read "$domain" "$key" 2>/dev/null) || actual="[not set]"
+    if [ "$actual" = "$expected" ]; then
+      echo "  OK  $label: $actual"
+      SETTINGS_OK=$((SETTINGS_OK+1))
+    else
+      echo "  !!  $label: expected=$expected actual=$actual"
+      SETTINGS_FAIL=$((SETTINGS_FAIL+1))
+    fi
+  }
+
+  # Trackpad
+  check_default "com.apple.driver.AppleBluetoothMultitouch.trackpad" "Clicking" "1" "Tap to click (Bluetooth)"
+  check_default "com.apple.AppleMultitouchTrackpad" "Clicking" "1" "Tap to click (built-in)"
+  check_default "com.apple.AppleMultitouchTrackpad" "FirstClickThreshold" "1" "First click threshold"
+  check_default "com.apple.AppleMultitouchTrackpad" "SecondClickThreshold" "1" "Second click threshold"
+  check_default "NSGlobalDomain" "com.apple.swipescrolldirection" "0" "Scroll direction (traditional)"
+
+  # Finder
+  check_default "NSGlobalDomain" "AppleShowAllExtensions" "1" "Show all file extensions"
+  check_default "com.apple.finder" "AppleShowAllFiles" "1" "Show hidden files"
+  check_default "com.apple.finder" "ShowPathbar" "1" "Finder path bar"
+  check_default "com.apple.finder" "ShowStatusBar" "1" "Finder status bar"
+  check_default "com.apple.finder" "FXPreferredViewStyle" "Nlsv" "Finder list view"
+  check_default "com.apple.finder" "FXEnableExtensionChangeWarning" "0" "Extension change warning off"
+  check_default "com.apple.WindowManager" "EnableStandardClickToShowDesktop" "0" "Click desktop to show off"
+
+  # Clock & units
+  check_default "NSGlobalDomain" "AppleICUForce24HourTime" "1" "24-hour clock"
+  check_default "NSGlobalDomain" "AppleTemperatureUnit" "Celsius" "Temperature unit"
+
+  # Sound
+  check_default "NSGlobalDomain" "com.apple.sound.uiaudio.enabled" "0" "UI sounds disabled"
+
+  # Mail
+  check_default "com.apple.mail" "MoveDiscardedMessagesToArchive" "1" "Mail archive behavior"
+
+  # Dock
+  check_default "com.apple.dock" "tilesize" "41" "Dock tile size"
+  check_default "com.apple.dock" "autohide" "0" "Dock autohide off"
+  check_default "com.apple.dock" "magnification" "0" "Dock magnification off"
+  check_default "com.apple.dock" "mru-spaces" "0" "MRU spaces off"
+  check_default "com.apple.dock" "launchanim" "0" "Launch animation off"
+  check_default "com.apple.dock" "show-recents" "1" "Dock show recents"
+
+  echo ""
+  echo "Settings check: $SETTINGS_OK OK, $SETTINGS_FAIL mismatched"
+  if [ "$SETTINGS_FAIL" -gt 0 ]; then
+    echo "Items marked !! need attention — some may require logout/restart to take effect."
+  fi
+} > "$REPORT"
+
+open "$REPORT"
 echo ""
+echo "Migration report saved to: $REPORT"
 echo "Done. SSH keys and remaining manual steps in README.md."

@@ -123,12 +123,6 @@ dockitems_persist:
     path: "/Applications/Discord.app/"
     pos: 8
 
-# ─── Cask apps to remove ──────────────────────────────────────────────────────
-homebrew_cask_uninstalled_apps:
-  - microsoft-outlook
-  - microsoft-onenote
-  - onedrive
-
 # ─── Homebrew behavior ────────────────────────────────────────────────────────
 homebrew_cask_accept_external_apps: true
 
