@@ -9,7 +9,6 @@
 #   apps        — Install direct-download apps (DMG/PKG/ZIP)
 #   mas         — Install App Store apps via mas
 #   config      — Deploy app configs (SSH, dotfiles, Firefox, Little Snitch rules)
-#   all         — Everything (default)
 
 - name: Configure Mac
   hosts: local
@@ -24,3 +23,39 @@
       tags: [mas]
     - role: app_config
       tags: [config]
+
+  post_tasks:
+    - name: "=== SETUP COMPLETE — NEXT STEPS ==="
+      debug:
+        msg: |
+
+          ╔══════════════════════════════════════════════════════════════════╗
+          ║  Ansible run finished. Check output above for any WARNINGs.    ║
+          ║                                                                  ║
+          ║  RESTART REQUIRED                                                ║
+          ║  Many system settings (trackpad, scroll, Finder) won't take     ║
+          ║  effect until you restart.                                       ║
+          ║                                                                  ║
+          ║  APPS NEEDING MANUAL SETUP (open each and sign in):             ║
+          ║  1. Adobe Creative Cloud → sign in as Nuri                      ║
+          ║       Then install: Acrobat, Photoshop, Lightroom               ║
+          ║  2. SetApp → sign in                                             ║
+          ║       Then install: Paste, CleanMyMac, Timing, iStat Menus      ║
+          ║  3. Little Snitch → enter license key from 1Password             ║
+          ║       Then approve network extension in System Settings          ║
+          ║  4. 1Password → sign into account                                ║
+          ║       Then: Settings > Developer > enable SSH agent              ║
+          ║  5. Backblaze Installer → open from Applications and run it      ║
+          ║       Then sign in and configure backup                          ║
+          ║  6. Google Drive → open and sign in                              ║
+          ║  7. Microsoft Office → open Word, sign into M365 to activate     ║
+          ║                                                                  ║
+          ║  APPS INSTALLED FROM APP STORE (sign in already handled):       ║
+          ║  Slack, Discord, Teams, Zoom, Signal, Tailscale, 1Password,     ║
+          ║  Magnet, WireGuard, Termius, Cyberduck, and others              ║
+          ║                                                                  ║
+          ║  FINAL COMMAND (after Little Snitch licensed + 1Password up):   ║
+          ║  ansible-playbook main.yml -i inventory/localhost \              ║
+          ║    --ask-become-pass --tags config                               ║
+          ╚══════════════════════════════════════════════════════════════════╝
+      tags: [always]

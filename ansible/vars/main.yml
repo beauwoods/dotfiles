@@ -141,30 +141,31 @@ direct_apps:
     # NOTE: Not on Mac App Store
 
   - name: "VLC"
-    url: "https://get.videolan.org/vlc/last/macosx/vlc-arm64.dmg"
+    url: "https://downloads.videolan.org/vlc/last/macosx/vlc-arm64.dmg"
     type: dmg
     app_name: "VLC.app"
-    # NOTE: VLC is NOT on the Mac App Store (iOS only)
-    # Check https://www.videolan.org/vlc/download-macosx.html for latest URL
+    # NOTE: VLC is NOT on the Mac App Store (iOS only).
+    # Using downloads.videolan.org (more stable than get.videolan.org CDN)
 
   - name: "Bambu Studio"
-    url: "https://github.com/bambulab/BambuStudio/releases/latest/download/Bambu_Studio_mac-arm64.dmg"
+    url: "https://github.com/bambulab/BambuStudio/releases/latest/download/BambuStudio-mac-arm64.dmg"
     type: dmg
     app_name: "Bambu Studio.app"
-    # NOTE: Not on Mac App Store. Update URL when new releases drop.
+    # NOTE: Not on Mac App Store. GitHub releases/latest/download auto-redirects to newest.
 
   - name: "Little Snitch"
-    url: "https://www.obdev.at/downloads/littlesnitch/latest-universal.dmg"
+    url: "https://www.obdev.at/downloads/littlesnitch/LittleSnitch-6.3.3.dmg"
     type: dmg
     app_name: "Little Snitch.app"
-    # License entered manually — see MANUAL_STEPS.md
-    # NOTE: Not on Mac App Store
+    # NOTE: Versioned URL — update when new version releases.
+    # Check: https://www.obdev.at/products/littlesnitch/releasenotes.html
+    # License entered manually — see MANUAL_STEPS.md. Runs in demo mode until licensed.
 
   - name: "SetApp"
-    url: "https://store.setapp.com/setapp.dmg"
+    url: "https://downloads.setapp.com/Setapp.dmg"
     type: dmg
     app_name: "Setapp.app"
-    # Login required before installing Paste, CleanMyMac, Timing, iStat Menus
+    # NOTE: Login required before installing Paste, CleanMyMac, Timing, iStat Menus
 
 # -----------------------------------------------------------------------
 # Little Snitch rule subscriptions
