@@ -97,7 +97,7 @@ direct_apps:
     app_name: "Firefox.app"
 
   - name: "GitHub Desktop"
-    url: "https://desktop.githubusercontent.com/releases/darwin-arm64/GitHubDesktop.zip"
+    url: "https://central.github.com/deployments/desktop/desktop/latest/darwin-arm64"
     type: zip
     app_name: "GitHub Desktop.app"
     # NOTE: arm64 (Apple Silicon) only. This playbook targets Apple Silicon MBPs.

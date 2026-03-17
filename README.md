@@ -128,3 +128,8 @@ Settings intentionally *not* automated are documented at the bottom of the
 
 - `DECISIONS.md` — tooling choices and rationale
 - `MANUAL_STEPS.md` — everything that can't be automated
+
+## To Do
+
+- Add `Desktop` to the menu bar to the left of `Downloads`
+- Get rid of most default icons on the menu bar

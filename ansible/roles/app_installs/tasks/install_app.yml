@@ -33,11 +33,23 @@
     dest: "/tmp/{{ app.name | replace(' ', '_') }}.{{ app.type }}"
     mode: '0644'
   when: app_installed_check.rc != 0
+  register: download_result
+  ignore_errors: true
+
+- name: "Warn and skip if download failed for {{ app.name }}"
+  debug:
+    msg: >
+      WARNING: Download failed for {{ app.name }} ({{ app.url }}).
+      Skipping install — add it manually or check the URL in vars/main.yml.
+  when:
+    - app_installed_check.rc != 0
+    - download_result is failed
 
 - name: "Install {{ app.name }} (dmg)"
   when:
     - app_installed_check.rc != 0
     - app.type == 'dmg'
+    - download_result is succeeded
   block:
     - name: "Mount DMG for {{ app.name }}"
       command: >
@@ -94,11 +106,13 @@
   when:
     - app_installed_check.rc != 0
     - app.type == 'pkg'
+    - download_result is succeeded
 
 - name: "Install {{ app.name }} (zip)"
   when:
     - app_installed_check.rc != 0
     - app.type == 'zip'
+    - download_result is succeeded
   block:
     - name: Unzip
       unarchive:
@@ -110,4 +124,6 @@
   file:
     path: "/tmp/{{ app.name | replace(' ', '_') }}.{{ app.type }}"
     state: absent
-  when: app_installed_check.rc != 0
+  when:
+    - app_installed_check.rc != 0
+    - download_result is succeeded
