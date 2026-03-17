@@ -41,6 +41,8 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 if ! command -v ansible-playbook &>/dev/null; then
   pip3 install ansible --break-system-packages 2>/dev/null \
     || pip3 install ansible
+  # pip3 installs binaries to a user-local dir not on PATH by default
+  export PATH="$(python3 -m site --user-base)/bin:$PATH"
 fi
 
 # ── Geerling's playbook ───────────────────────────────────────────────
