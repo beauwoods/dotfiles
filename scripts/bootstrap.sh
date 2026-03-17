@@ -241,22 +241,26 @@ REPORT="$HOME/Desktop/migration-report.txt"
   # Sound
   check_default "NSGlobalDomain" "com.apple.sound.uiaudio.enabled" "0" "UI sounds disabled"
 
-  # Mail (sandboxed — read from container plist)
-  MAIL_PLIST="$HOME/Library/Containers/com.apple.mail/Data/Library/Preferences/com.apple.mail.plist"
-  check_default "$MAIL_PLIST" "MoveDiscardedMessagesToArchive" "1" "Mail archive behavior"
-  check_default "$MAIL_PLIST" "ThreadingDefault" "1" "Mail threading on"
-  check_default "$MAIL_PLIST" "UserDidCollapseFavoritesSectionKey" "0" "Mail favorites sidebar expanded"
-  check_default "$MAIL_PLIST" "FullScreenPreferSplit" "0" "Mail full-screen no split"
-  check_default "$MAIL_PLIST" "SwipeAction" "1" "Mail swipe action"
-  check_default "$MAIL_PLIST" "ShowCcHeader" "1" "Mail CC header shown"
-  check_default "$MAIL_PLIST" "ShowBccHeader" "1" "Mail BCC header shown"
-  check_default "$MAIL_PLIST" "ShowComposeFormatInspectorBar" "1" "Mail format bar shown"
-  check_default "$MAIL_PLIST" "ShowPriorityControl" "1" "Mail priority control shown"
-  check_default "$MAIL_PLIST" "ShowReplyToHeader" "0" "Mail Reply-To hidden"
-  check_default "$MAIL_PLIST" "AlwaysIncludeOriginalMessage" "0" "Mail don't include original"
-  check_default "$MAIL_PLIST" "PlayMailSounds" "0" "Mail sounds off"
-  check_default "$MAIL_PLIST" "MailDockBadge" "5" "Mail dock badge style"
-  check_default "$MAIL_PLIST" "SpellCheckingBehavior" "InlineSpellCheckingEnabled" "Mail inline spell check"
+  # Mail (requires Full Disk Access for Terminal — see MANUAL_PAUSE.md step 1)
+  if defaults read com.apple.mail MoveDiscardedMessagesToArchive &>/dev/null; then
+    check_default "com.apple.mail" "MoveDiscardedMessagesToArchive" "1" "Mail archive behavior"
+    check_default "com.apple.mail" "ThreadingDefault" "1" "Mail threading on"
+    check_default "com.apple.mail" "UserDidCollapseFavoritesSectionKey" "0" "Mail favorites sidebar expanded"
+    check_default "com.apple.mail" "FullScreenPreferSplit" "0" "Mail full-screen no split"
+    check_default "com.apple.mail" "SwipeAction" "1" "Mail swipe action"
+    check_default "com.apple.mail" "ShowCcHeader" "1" "Mail CC header shown"
+    check_default "com.apple.mail" "ShowBccHeader" "1" "Mail BCC header shown"
+    check_default "com.apple.mail" "ShowComposeFormatInspectorBar" "1" "Mail format bar shown"
+    check_default "com.apple.mail" "ShowPriorityControl" "1" "Mail priority control shown"
+    check_default "com.apple.mail" "ShowReplyToHeader" "0" "Mail Reply-To hidden"
+    check_default "com.apple.mail" "AlwaysIncludeOriginalMessage" "0" "Mail don't include original"
+    check_default "com.apple.mail" "PlayMailSounds" "0" "Mail sounds off"
+    check_default "com.apple.mail" "NewMessagesSoundName" "" "Mail notification sound none"
+    check_default "com.apple.mail" "MailDockBadge" "5" "Mail dock badge style"
+    check_default "com.apple.mail" "SpellCheckingBehavior" "InlineSpellCheckingEnabled" "Mail inline spell check"
+  else
+    echo "  --  Mail: domain not readable — ensure Terminal has Full Disk Access and Mail has been launched once"
+  fi
 
   # Dock
   check_default "com.apple.dock" "tilesize" "41" "Dock tile size"

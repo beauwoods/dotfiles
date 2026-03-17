@@ -93,10 +93,36 @@
 
   ignore_errors: true
 
-# ── Mail ──────────────────────────────────────────────────────────────────────
-# Mail.app is sandboxed on macOS Tahoe — no external process can write to its
-# container preferences. Layout settings must be configured manually in Mail.
-# See docs/MANUAL_PAUSE.md for the checklist.
+# ── Mail (requires Full Disk Access for Terminal) ────────────────────────────
+# Mail.app is sandboxed — defaults only works with FDA enabled.
+# Bootstrap checks for this and prompts the user if needed.
+- name: Quit Mail before writing preferences
+  shell: osascript -e 'quit app "Mail"' 2>/dev/null || true
+  changed_when: false
+
+- name: Apply Mail preferences
+  community.general.osx_defaults:
+    domain: "com.apple.mail"
+    key:    "{{ item.key }}"
+    type:   "{{ item.type }}"
+    value:  "{{ item.value }}"
+  loop:
+    - { key: MoveDiscardedMessagesToArchive, type: bool,   value: true }
+    - { key: ThreadingDefault,              type: bool,   value: true }
+    - { key: UserDidCollapseFavoritesSectionKey, type: bool, value: false }
+    - { key: FullScreenPreferSplit,         type: bool,   value: false }
+    - { key: SwipeAction,                   type: int,    value: 1 }
+    - { key: ShowCcHeader,                  type: bool,   value: true }
+    - { key: ShowBccHeader,                 type: bool,   value: true }
+    - { key: ShowComposeFormatInspectorBar, type: bool,   value: true }
+    - { key: ShowPriorityControl,           type: bool,   value: true }
+    - { key: ShowReplyToHeader,             type: bool,   value: false }
+    - { key: AlwaysIncludeOriginalMessage,  type: bool,   value: false }
+    - { key: PlayMailSounds,                type: bool,   value: false }
+    - { key: NewMessagesSoundName,          type: string, value: "" }
+    - { key: MailDockBadge,                 type: int,    value: 5 }
+    - { key: SpellCheckingBehavior,         type: string, value: InlineSpellCheckingEnabled }
+  ignore_errors: true
 
 # ── Dock behavior ─────────────────────────────────────────────────────────────
 - name: Apply Dock behavior settings
