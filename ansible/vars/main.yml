@@ -25,7 +25,7 @@ private_dir: "{{ ansible_env.HOME }}/Library/Mobile Documents/com~apple~CloudDoc
 mas_apps:
   # Communication
   - { name: "Slack",            id: 803453959   }
-  - { name: "Discord",          id: 985367838   }
+  # Discord is NOT on the Mac App Store — direct download only (see direct_apps below)
   - { name: "Microsoft Teams",  id: 1113153706  }
   - { name: "Zoom",             id: 1451360998  }
   - { name: "Signal",           id: 1480068668  }
@@ -141,15 +141,18 @@ direct_apps:
     # NOTE: Not on Mac App Store
 
   - name: "VLC"
-    url: "https://downloads.videolan.org/vlc/last/macosx/vlc-arm64.dmg"
+    url: "https://get.videolan.org/vlc/3.0.21/macosx/vlc-3.0.21-arm64.dmg"
     type: dmg
     app_name: "VLC.app"
     # NOTE: VLC is NOT on the Mac App Store (iOS only).
-    # Using downloads.videolan.org (more stable than get.videolan.org CDN)
+    # Update version number when VLC releases a new version.
+    # Check https://www.videolan.org/vlc/download-macosx.html for latest.
 
   - name: "Bambu Studio"
     github_release: "bambulab/BambuStudio"
-    github_asset_pattern: "mac-arm64\\.dmg$"
+    github_asset_pattern: "_mac-.*\\.dmg$"
+    # Asset name from API: Bambu_Studio_mac-v02.05.00.66-<timestamp>.dmg
+    # Pattern was previously "mac-arm64\\.dmg$" which matched nothing.
     type: dmg
     app_name: "Bambu Studio.app"
     url: ""
@@ -169,6 +172,13 @@ direct_apps:
     type: dmg
     app_name: "Setapp.app"
     # NOTE: Login required before installing Paste, CleanMyMac, Timing, iStat Menus
+
+  - name: "Discord"
+    url: "https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=osx&arch=arm64"
+    type: dmg
+    app_name: "Discord.app"
+    # NOTE: Discord is NOT on the Mac App Store — direct download only.
+    # The iOS App Store ID (985746746) is iOS-only; there is no Mac App Store listing.
 
 # -----------------------------------------------------------------------
 # Little Snitch rule subscriptions
@@ -196,9 +206,9 @@ little_snitch_preferences:
     value: "1"
 
   # Default rule lifetime when creating rules from an alert.
-  # 0 = Until Quit, 1 = Forever, 2 = While Running
+  # Verified on MacBlue-Air: 1 = Until Quit (desired)
   - key: defaultRuleLifetimeForCreatingRulesInAlert
-    value: "0"
+    value: "1"
 
   # Create rules scoped to all profiles, not just the active one.
   # false = effective in all profiles (what the alert dropdown calls "Any Profile")

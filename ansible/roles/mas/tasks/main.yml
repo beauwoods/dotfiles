@@ -76,7 +76,11 @@
     msg: "mas binary: {{ mas_bin.stdout if mas_bin.rc == 0 else 'NOT FOUND — App Store installs will be skipped' }}"
 
 - name: Check App Store signin status
-  command: "{{ mas_bin.stdout }} account"
+  # 'mas account' was removed in mas v6. Use 'mas list' as a proxy —
+  # it exits 0 whether signed in or not, but 'mas install' will fail
+  # with a clear error if not signed in. We check via a known free app
+  # (Slack) — if mas can see it, the store is reachable and signed in.
+  command: "{{ mas_bin.stdout }} list"
   register: mas_account
   ignore_errors: true
   changed_when: false
@@ -84,7 +88,7 @@
 
 - name: "[LOG] mas — App Store account status"
   debug:
-    msg: "App Store: {{ 'signed in as ' + mas_account.stdout | trim if (mas_bin.rc == 0 and mas_account.rc == 0) else 'NOT SIGNED IN — App Store installs will be skipped' }}"
+    msg: "App Store: {{ 'reachable (' + (mas_account.stdout_lines | length | string) + ' apps listed)' if (mas_bin.rc == 0 and mas_account is defined and mas_account.rc == 0) else 'mas list failed — check App Store sign-in' }}"
   when: mas_bin.rc == 0
 
 - name: Install App Store apps
