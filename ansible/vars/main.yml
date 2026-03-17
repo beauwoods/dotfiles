@@ -104,7 +104,7 @@ direct_apps:
     # If ever running on Intel, change darwin-arm64 to darwin-x64.
 
   - name: "Visual Studio Code"
-    url: "https://code.visualstudio.com/sha/download?build=stable&os=darwin-arm64"
+    url: "https://update.code.visualstudio.com/latest/darwin-arm64/stable"
     type: zip
     app_name: "Visual Studio Code.app"
     # NOTE: Not on Mac App Store
@@ -112,10 +112,9 @@ direct_apps:
   - name: "Backblaze"
     url: "https://www.backblaze.com/mac/install_backblaze.dmg"
     type: dmg
-    app_name: "Backblaze.app"
-    # NOTE: The DMG contains "Backblaze Installer.app" which installs to
-    # /Applications/Backblaze.app — we check for the final installed app,
-    # not the installer, so idempotency works correctly.
+    app_name: "Backblaze Installer.app"
+    # NOTE: DMG contains "Backblaze Installer.app" — run it to install.
+    # The final installed app ends up at /Library/PreferencePanes/Backblaze.prefPane.
 
   - name: "iTerm2"
     url: "https://iterm2.com/downloads/stable/latest"
@@ -133,15 +132,10 @@ direct_apps:
     url: "https://prod-rel-ffc-ccm.oobesaas.adobe.com/adobe-ffc-external/core/v1/wam/download?sapCode=KCCC&productName=Creative+Cloud&os=mac"
     type: dmg
     app_name: "Creative Cloud.app"
-    # NOTE: CC installs to /Applications/Utilities/Adobe Creative Cloud/ACC/Creative Cloud.app
-    # The app_name here is matched by find inside the DMG, not by path in /Applications.
-    # The idempotency stat check looks for /Applications/Creative Cloud.app which won't exist —
-    # add a custom check override or accept that CC re-downloads if run again (it won't reinstall
-    # if CC is already present since the DMG find will locate the correct installer).
-    # Login as Nuri required before installing Acrobat/PS/LR.
+    # NOTE: Login as Nuri required before installing Acrobat/PS/LR.
 
   - name: "Wireshark"
-    url: "https://www.wireshark.org/download/osx/Wireshark-latest-arm64.dmg"
+    url: "https://2.na.dl.wireshark.org/osx/Wireshark%20Latest%20Arm%2064.dmg"
     type: dmg
     app_name: "Wireshark.app"
     # NOTE: Not on Mac App Store
@@ -154,11 +148,10 @@ direct_apps:
     # Check https://www.videolan.org/vlc/download-macosx.html for latest URL
 
   - name: "Bambu Studio"
-    # Check latest at: https://github.com/bambulab/BambuStudio/releases
-    url: "https://github.com/bambulab/BambuStudio/releases/latest"
+    url: "https://github.com/bambulab/BambuStudio/releases/latest/download/Bambu_Studio_mac-arm64.dmg"
     type: dmg
     app_name: "Bambu Studio.app"
-    # NOTE: Not on Mac App Store
+    # NOTE: Not on Mac App Store. Update URL when new releases drop.
 
   - name: "Little Snitch"
     url: "https://www.obdev.at/downloads/littlesnitch/latest-universal.dmg"

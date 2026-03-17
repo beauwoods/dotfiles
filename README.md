@@ -132,4 +132,6 @@ Settings intentionally *not* automated are documented at the bottom of the
 ## To Do
 
 - Add `Desktop` to the menu bar to the left of `Downloads`
-- Get rid of most default icons on the menu bar
+- Get rid of most default icons on the menu bar and put selected icons on it. Can we pull those from the prior install?
+- Get rid of junk apps like GarageBand, iMovie, and the Apple Office suite
+- Is there a way to add the properties we want to transfer from the old install to the new one, then the preflight script can capture the preference and the configuration settings and bootstrap can apply them? 

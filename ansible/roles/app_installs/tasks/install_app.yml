@@ -100,6 +100,19 @@
           | grep "^/Volumes/" | head -1 | xargs -I{} hdiutil detach "{}" -quiet || true
       ignore_errors: true
 
+  rescue:
+    - name: "Warn that DMG install failed for {{ app.name }}"
+      debug:
+        msg: >
+          WARNING: DMG install failed for {{ app.name }}.
+          The downloaded file may not be a valid DMG, or the URL may have changed.
+          Check the URL in vars/main.yml and install manually if needed.
+    - name: "Clean up failed DMG for {{ app.name }}"
+      file:
+        path: "/tmp/{{ app.name | replace(' ', '_') }}.dmg"
+        state: absent
+      ignore_errors: true
+
 - name: "Install {{ app.name }} (pkg)"
   become: true
   command: installer -pkg "/tmp/{{ app.name | replace(' ', '_') }}.pkg" -target /
