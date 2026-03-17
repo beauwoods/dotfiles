@@ -2,6 +2,9 @@
 # roles/system_defaults/tasks/main.yml
 # Apply macOS system preferences via osx_defaults module.
 # Most require a logout/reboot to fully take effect.
+#
+# ignore_errors is set per-task so that a single bad value doesn't abort
+# the entire play. Failures are logged but don't stop app installs.
 
 - name: Apply osx_defaults settings
   osx_defaults:
@@ -11,6 +14,7 @@
     value: "{{ item.value }}"
     state: present
   loop: "{{ osx_defaults }}"
+  ignore_errors: true
 
 - name: Notify that a restart may be needed
   debug:

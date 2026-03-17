@@ -200,16 +200,17 @@ little_snitch_rule_subscriptions:
 osx_defaults:
 
   # ── Trackpad ────────────────────────────────────────────────────────────
-  # Tap to click — fresh macOS has this OFF, requires physical press
+  # Tap to click — fresh macOS has this OFF, requires physical press.
+  # Note: macOS stores Clicking as int (0/1), not bool — type must be int.
   - domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad"
     key: "Clicking"
-    type: bool
-    value: true
+    type: int
+    value: 1
 
   - domain: "com.apple.AppleMultitouchTrackpad"
     key: "Clicking"
-    type: bool
-    value: true
+    type: int
+    value: 1
 
   # Click force threshold: 0=light, 1=medium, 2=firm
   # Default on fresh macOS: 1 (medium). Keeping explicit.
@@ -307,12 +308,10 @@ osx_defaults:
     value: "/System/Library/Sounds/Tink.aiff"
 
   # ── Mail ────────────────────────────────────────────────────────────────
-  # Don't load remote images/tracking pixels in email
-  - domain: "com.apple.mail-shared"
-    key: "DisableURLLoading"
-    type: bool
-    value: true
-
+  # NOTE: com.apple.mail-shared is sandboxed and can only be written while
+  # Mail.app is running. Skipped here — set manually via Mail > Settings > Viewing:
+  #   "Load remote content in messages" → OFF
+  #
   # Move deleted messages to archive rather than trash
   - domain: "com.apple.mail"
     key: "MoveDiscardedMessagesToArchive"
