@@ -28,9 +28,6 @@ homebrew_cask_apps:
   # Productivity
   - setapp                  # sign in → install Paste, CleanMyMac, Timing, iStat Menus
 
-  # Microsoft (Outlook standalone; Word/Excel/PPT stay in App Store)
-  - microsoft-outlook
-
   # Creative
   - figma
   - bambu-studio
@@ -125,6 +122,15 @@ dockitems_persist:
   - name: "Discord"
     path: "/Applications/Discord.app/"
     pos: 8
+
+# ─── Cask apps to remove ──────────────────────────────────────────────────────
+homebrew_cask_uninstalled_apps:
+  - microsoft-outlook
+  - microsoft-onenote
+  - onedrive
+
+# ─── Homebrew behavior ────────────────────────────────────────────────────────
+homebrew_cask_accept_external_apps: true
 
 # ─── Disable Geerling features we replace ─────────────────────────────────────
 configure_dotfiles: false   # shell dotfiles come from iCloud private
