@@ -25,6 +25,11 @@ Open SetApp → sign in → install: Paste, CleanMyMac, Timing, iStat Menus.
 ## 4. 1Password (~2 min)
 Open 1Password → sign in → Settings > Developer → enable "Use the SSH agent".
 
+## 5. Trackpad Scroll Direction
+System Settings > Trackpad > Scroll & Zoom → turn off "Natural Scrolling".
+(The `defaults write` for this setting does not persist through reboot on macOS Tahoe —
+toggle it here so macOS syncs it properly.)
+
 ---
 
 When all done, return to the terminal and press Enter.
