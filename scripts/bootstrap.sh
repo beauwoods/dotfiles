@@ -15,8 +15,11 @@ LOCAL="$HOME/mac-config"
 # Kill any orphaned sudo keep-alive loops from previous crashed runs
 pkill -f 'sudo -n true' 2>/dev/null || true
 
-echo "Enter your password once — needed for app installs:"
-sudo -v
+# Read the password once — used for sudo AND passed to Ansible's become.
+# Process substitution (<(echo ...)) keeps it out of ps and off disk.
+read -s -r -p "Enter your password once — needed for the entire setup: " SUDO_PASS
+echo ""
+echo "$SUDO_PASS" | sudo -S -v 2>/dev/null
 ( while true; do sudo -n true; sleep 60; done ) &
 SUDO_PID=$!
 trap 'kill $SUDO_PID 2>/dev/null' EXIT
@@ -75,8 +78,17 @@ LOG="$HOME/.local/share/mac-setup/logs/ansible_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p "$(dirname "$LOG")"
 export ANSIBLE_LOG_PATH="$LOG"
 
-ansible-playbook main.yml --skip-tags post-auth
-echo "Phase 1 complete. Log: $LOG"
+PHASE1_OK=true
+ansible-playbook main.yml --skip-tags post-auth \
+  --become-password-file <(echo "$SUDO_PASS") \
+  || PHASE1_OK=false
+
+if $PHASE1_OK; then
+  echo "Phase 1 complete. Log: $LOG"
+else
+  echo "Phase 1 finished with errors (see above). Log: $LOG"
+  echo "Continuing to manual pause — errors will appear in the migration report."
+fi
 
 # ── Pause ─────────────────────────────────────────────────────────────
 open "$LOCAL/docs/MANUAL_PAUSE.md"
@@ -89,7 +101,14 @@ read -r -p "  Press Enter when ready... "
 echo ""
 
 # ── Phase 2 ───────────────────────────────────────────────────────────
-ansible-playbook main.yml --tags post-auth
+PHASE2_OK=true
+ansible-playbook main.yml --tags post-auth \
+  --become-password-file <(echo "$SUDO_PASS") \
+  || PHASE2_OK=false
+
+if ! $PHASE2_OK; then
+  echo "Phase 2 finished with errors (see above). Log: $LOG"
+fi
 
 # ── Migration Report ────────────────────────────────────────────────
 PRIVATE_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/dotfiles-private"
@@ -99,6 +118,14 @@ REPORT="$HOME/Desktop/migration-report.txt"
 {
   echo "Migration Report — $(date)"
   echo "════════════════════════════════════════════════════════════"
+
+  if ! $PHASE1_OK || ! $PHASE2_OK; then
+    echo ""
+    echo "!! WARNING: Ansible reported errors during setup."
+    echo "   Phase 1: $( $PHASE1_OK && echo OK || echo ERRORS )"
+    echo "   Phase 2: $( $PHASE2_OK && echo OK || echo ERRORS )"
+    echo "   Review the log: $LOG"
+  fi
   echo ""
 
   # Capture current state
