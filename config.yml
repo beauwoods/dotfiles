@@ -1,0 +1,132 @@
+---
+
+# ─── Homebrew: CLI tools ──────────────────────────────────────────────────────
+homebrew_installed_packages:
+  - git
+  - gh       # GitHub CLI
+  - mas      # App Store CLI
+  - wget
+  - nmap
+
+# ─── Homebrew: GUI apps (casks) ───────────────────────────────────────────────
+homebrew_cask_apps:
+  # Browsers
+  - google-chrome
+  - firefox
+
+  # Dev tools
+  - iterm2
+  - visual-studio-code
+  - github                  # GitHub Desktop
+
+  # Communication
+  - discord
+  - microsoft-teams
+  - zoom
+  - signal
+
+  # Productivity
+  - setapp                  # sign in → install Paste, CleanMyMac, Timing, iStat Menus
+
+  # Microsoft (Outlook standalone; Word/Excel/PPT stay in App Store)
+  - microsoft-outlook
+
+  # Creative
+  - figma
+  - bambu-studio
+  - vlc
+
+  # AI
+  - claude
+  - chatgpt
+
+  # Security
+  - little-snitch           # needs: license entry + terminal access (MANUAL_PAUSE.md)
+  - wireshark               # needs: access_bpf group (handled in osx-defaults.yml)
+
+  # Storage / backup
+  - backblaze
+  - google-drive
+
+  # Hardware
+  - elgato-camera-hub
+  - cyberduck
+
+  # Gaming / streaming
+  - nvidia-geforce-now
+
+  # Adobe — still needs manual sign-in + per-app installs inside CC
+  - adobe-creative-cloud
+
+  # ── Uncomment as needed ──────────────────────────────────────────────────────
+  # - caldigit-docking-utility
+  # - displaylink-manager
+  # - logitech-options
+  # - logitech-g-hub
+  # - loopback                  # needs license
+  # - parallels                 # needs license
+  # - crossover                 # needs license
+  # - home-assistant
+
+# ─── App Store apps ───────────────────────────────────────────────────────────
+mas_installed_apps:
+  - { id: 803453959,  name: "Slack" }
+  - { id: 462054704,  name: "Microsoft Word" }
+  - { id: 462058435,  name: "Microsoft Excel" }
+  - { id: 462062816,  name: "Microsoft PowerPoint" }
+  - { id: 1475387142, name: "Tailscale" }
+  - { id: 1176074088, name: "Termius" }
+  - { id: 1333542190, name: "1Password" }
+  - { id: 441258766,  name: "Magnet" }
+  - { id: 1451685025, name: "WireGuard" }
+  - { id: 1295203466, name: "Windows App" }
+  - { id: 571213070,  name: "DaVinci Resolve" }
+  # - { id: 1099568401, name: "Home Assistant" }
+
+# ─── Dock ─────────────────────────────────────────────────────────────────────
+configure_dock: true
+dockitems_remove:
+  - Launchpad
+  - TV
+  - News
+  - Podcasts
+  - Maps
+  - "App Store"
+  - Contacts
+  - Reminders
+  - Notes
+  - FaceTime
+  - Photos
+
+# Phase 1 dock — everything except Timing (SetApp, added post-auth).
+# Final order: Chrome Firefox Mail Calendar Slack [Timing] GeForce NOW Photos Discord
+dockitems_persist:
+  - name: "Google Chrome"
+    path: "/Applications/Google Chrome.app/"
+    pos: 1
+  - name: "Firefox"
+    path: "/Applications/Firefox.app/"
+    pos: 2
+  - name: "Mail"
+    path: "/System/Applications/Mail.app/"
+    pos: 3
+  - name: "Calendar"
+    path: "/System/Applications/Calendar.app/"
+    pos: 4
+  - name: "Slack"
+    path: "/Applications/Slack.app/"
+    pos: 5
+  - name: "GeForce NOW"
+    path: "/Applications/GeForce NOW.app/"
+    pos: 6
+  - name: "Photos"
+    path: "/System/Applications/Photos.app/"
+    pos: 7
+  - name: "Discord"
+    path: "/Applications/Discord.app/"
+    pos: 8
+
+# ─── Disable Geerling features we replace ─────────────────────────────────────
+configure_dotfiles: false   # shell dotfiles come from iCloud private
+configure_terminal: false   # we use iTerm2, not Terminal.app
+configure_osx: false        # handled by tasks/osx-defaults.yml instead

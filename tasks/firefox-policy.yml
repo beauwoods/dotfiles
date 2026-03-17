@@ -1,0 +1,14 @@
+---
+- name: Ensure Firefox policy directory exists
+  become: true
+  file:
+    path: "/Library/Application Support/Mozilla"
+    state: directory
+    mode: '0755'
+
+- name: Deploy Firefox enterprise policy
+  become: true
+  copy:
+    src: "{{ playbook_dir }}/configs/firefox/policies.json"
+    dest: "/Library/Application Support/Mozilla/policies.json"
+    mode: '0644'

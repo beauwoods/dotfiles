@@ -1,0 +1,13 @@
+---
+- name: Remove Apple bundled apps we don't use
+  become: true
+  file:
+    path: "/Applications/{{ item }}"
+    state: absent
+  loop:
+    - GarageBand.app
+    - iMovie.app
+    - Pages.app
+    - Numbers.app
+    - Keynote.app
+  ignore_errors: true

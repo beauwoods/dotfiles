@@ -1,0 +1,22 @@
+---
+- name: Check if Little Snitch CLI is available
+  command: which littlesnitch
+  register: ls_bin
+  ignore_errors: true
+  changed_when: false
+
+- name: Apply Little Snitch preferences
+  become: true
+  command: "littlesnitch write-preference {{ item.key }} {{ item.value }}"
+  loop:
+    - { key: detailLevelPortAndProtocol,                         value: "1" }
+    - { key: defaultRuleLifetimeForCreatingRulesInAlert,         value: "1" }
+    - { key: useActiveProfileWhenCreatingRulesInAlert,           value: "false" }
+    - { key: preferPathBasedRules,                               value: "false" }
+    - { key: useSpecificPortAndProtocolWhenCreatingRulesInAlert, value: "true" }
+    - { key: keepConnectionAlertsMinimized,                      value: "false" }
+    - { key: confirmWithReturnKey,                               value: "false" }
+    - { key: enabledUserNotificationTypes,                       value: "18446744073709551614" }
+    - { key: menuBarExtraNumericDataRateStyle,                   value: "0" }
+  when: ls_bin.rc == 0
+  ignore_errors: true

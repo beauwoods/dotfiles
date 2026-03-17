@@ -1,0 +1,121 @@
+---
+- name: Apply macOS system preferences
+  community.general.osx_defaults:
+    domain: "{{ item.domain }}"
+    key:    "{{ item.key }}"
+    type:   "{{ item.type }}"
+    value:  "{{ item.value }}"
+  loop:
+
+    # ── Trackpad ────────────────────────────────────────────────────────
+    - { domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad",
+        key: Clicking,              type: int, value: 1 }
+    - { domain: "com.apple.AppleMultitouchTrackpad",
+        key: Clicking,              type: int, value: 1 }
+    - { domain: "com.apple.AppleMultitouchTrackpad",
+        key: FirstClickThreshold,   type: int, value: 1 }
+    - { domain: "com.apple.AppleMultitouchTrackpad",
+        key: SecondClickThreshold,  type: int, value: 1 }
+    - { domain: NSGlobalDomain,
+        key: "com.apple.swipe-scrolling", type: int, value: 0 }
+
+    # ── Finder ──────────────────────────────────────────────────────────
+    - { domain: NSGlobalDomain,
+        key: AppleShowAllExtensions,        type: bool, value: true }
+    - { domain: "com.apple.finder",
+        key: AppleShowAllFiles,             type: bool, value: true }
+    - { domain: "com.apple.finder",
+        key: ShowPathbar,                   type: bool, value: true }
+    - { domain: "com.apple.finder",
+        key: ShowStatusBar,                 type: bool, value: true }
+    - { domain: "com.apple.finder",
+        key: FXPreferredViewStyle,          type: string, value: Nlsv }
+    - { domain: "com.apple.finder",
+        key: FXEnableExtensionChangeWarning, type: bool, value: false }
+    - { domain: "com.apple.WindowManager",
+        key: EnableStandardClickToShowDesktop, type: bool, value: false }
+
+    # ── Clock & units ────────────────────────────────────────────────────
+    - { domain: NSGlobalDomain,
+        key: AppleICUForce24HourTime,  type: bool, value: true }
+    - { domain: NSGlobalDomain,
+        key: AppleTemperatureUnit,     type: string, value: Celsius }
+
+    # ── Sound ────────────────────────────────────────────────────────────
+    - { domain: NSGlobalDomain,
+        key: "com.apple.sound.uiaudio.enabled", type: int,    value: 0 }
+    - { domain: NSGlobalDomain,
+        key: "com.apple.sound.beep.sound",      type: string,
+        value: "/System/Library/Sounds/Tink.aiff" }
+
+    # ── Mail ─────────────────────────────────────────────────────────────
+    - { domain: "com.apple.mail",
+        key: MoveDiscardedMessagesToArchive, type: bool, value: true }
+
+    # ── iTerm2 ───────────────────────────────────────────────────────────
+    - { domain: "com.googlecode.iterm2",
+        key: LoadPrefsFromCustomFolder, type: bool, value: true }
+    - { domain: "com.googlecode.iterm2",
+        key: PrefsCustomFolder,         type: string,
+        value: "~/Library/Mobile Documents/com~apple~CloudDocs/dotfiles-private/iterm2" }
+
+    # ── Menu bar (com.apple.controlcenter) ──────────────────────────────
+    # ALL keys in this domain use type: int (not bool) — the domain stores
+    # them as integers and mixing types causes macOS to ignore written values.
+    #
+    # Visible = 1 → shows directly in menu bar
+    # Visible = 0 → hidden from bar (may still show inside CC panel)
+
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Visible BentoBox",       type: int, value: 1 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Visible WiFi",           type: int, value: 0 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Visible NowPlaying",     type: int, value: 0 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Visible Display",        type: int, value: 0 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Visible Shortcuts",      type: int, value: 0 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Visible Desktop",        type: int, value: 1 }
+
+    # Items visible inside the Control Center panel
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem VisibleCC Battery",      type: int, value: 1 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem VisibleCC Clock",        type: int, value: 1 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem VisibleCC Sound",        type: int, value: 1 }
+
+    # Positions (pixel offset from right edge; higher = further left)
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Preferred Position BentoBox", type: int, value: 271 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Preferred Position Battery",  type: int, value: 339 }
+    - { domain: "com.apple.controlcenter",
+        key: "NSStatusItem Preferred Position WiFi",     type: int, value: 303 }
+
+  ignore_errors: true
+
+# ── Dock behavior ─────────────────────────────────────────────────────────────
+- name: Apply Dock behavior settings
+  community.general.osx_defaults:
+    domain: com.apple.dock
+    key:    "{{ item.key }}"
+    type:   "{{ item.type }}"
+    value:  "{{ item.value }}"
+  loop:
+    - { key: tilesize,      type: integer, value: 41    }
+    - { key: autohide,      type: bool,    value: false }
+    - { key: magnification, type: bool,    value: false }
+    - { key: mru-spaces,    type: bool,    value: false }
+    - { key: launchanim,    type: bool,    value: false }
+    - { key: show-recents,  type: bool,    value: true  }
+  ignore_errors: true
+
+# ── Wireshark ─────────────────────────────────────────────────────────────────
+- name: Add user to access_bpf group for Wireshark
+  become: true
+  command: "dseditgroup -o edit -a {{ ansible_user_id }} -t user access_bpf"
+  changed_when: false
+  ignore_errors: true

@@ -1,141 +1,143 @@
-# dotfiles
+# mac-config
 
-Beau's Mac setup. Deterministic, repeatable, no Homebrew.
+Beau's Mac setup. One command, deterministic, repeatable.
 
-## Philosophy
+Built on [geerlingguy/mac-dev-playbook](https://github.com/geerlingguy/mac-dev-playbook)
+with iCloud Drive for private data. This repo contains zero secrets.
 
-This repo is the source of truth for a new machine setup. The old machine
-is a *reference*, not a source of truth. Everything here was written
-intentionally, not migrated.
+## Architecture
 
-## Preflight (on the OLD machine)
+Three components:
 
-Before deployment day, run preflight to capture configs to iCloud:
+- **Geerling's playbook** — cloned at bootstrap time, never forked
+- **iCloud Drive** (`dotfiles-private/`) — syncs automatically once you sign
+  into Apple ID; holds shell dotfiles, SSH config, iTerm2 prefs, signatures
+- **This repo** — holds `config.yml`, custom task files, Firefox policy,
+  bootstrap scripts
 
-```bash
-~/Documents/GitHub/dotfiles/scripts/preflight.sh
-```
+## Quick Start (new machine)
 
-Then commit and push any repo changes (`configs/firefox/`, `configs/ssh/README.md`).
-Personal data (shell dotfiles, SSH config, signatures, iTerm2/iStat prefs) goes to
-iCloud Drive automatically — not to the repo.
-
-## Deployment (on the NEW machine)
-
-**Step 1 — Bootstrap.** Paste this into Terminal on the new machine. It installs
-Xcode CLI tools, clones this repo, updates macOS, installs Ansible, and runs
-the full playbook unattended:
+Complete macOS Setup Assistant and sign into Apple ID first, then:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/beauwoods/dotfiles/main/scripts/bootstrap.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/beauwoods/mac-config/main/scripts/bootstrap.sh)"
 ```
 
-If bootstrap reports that a restart is required for OS updates, restart and re-run the same command.
+This runs in two phases:
 
-**Steps 2–7 — Follow MANUAL_STEPS.md.** The full deployment runbook is there,
-including auth sessions and manual steps. The short version of the final run:
+1. **Phase 1 (~2 hours, unattended)** — Xcode CLI tools, Homebrew, Ansible,
+   all packages/casks/App Store apps, macOS preferences, Dock layout
+2. **Pause** — a window opens with manual steps (Adobe CC sign-in, SetApp,
+   Little Snitch license, 1Password SSH agent)
+3. **Phase 2 (~5 min)** — SSH config restore, Firefox policy, Little Snitch
+   prefs, Dock folders, Timing added to Dock
+
+## Preflight (on the old machine)
+
+Before deployment day, capture private configs to iCloud:
 
 ```bash
-~/Documents/GitHub/dotfiles/scripts/run-playbook.sh --tags config
+~/mac-config/scripts/preflight.sh
 ```
 
-### Re-running specific parts
+This copies shell dotfiles, SSH config, mail signatures, iTerm2/iStat prefs,
+and a defaults snapshot to `~/Library/Mobile Documents/com~apple~CloudDocs/dotfiles-private/`.
+Everything syncs to the new machine via iCloud.
 
-Always use `run-playbook.sh` — it handles the binary path, working directory,
-verbosity, and writes a timestamped log to `~/.local/share/dotfiles/logs/`.
-
-```bash
-~/Documents/GitHub/dotfiles/scripts/run-playbook.sh --tags defaults
-~/Documents/GitHub/dotfiles/scripts/run-playbook.sh --tags apps
-~/Documents/GitHub/dotfiles/scripts/run-playbook.sh --tags mas
-~/Documents/GitHub/dotfiles/scripts/run-playbook.sh --tags config
-~/Documents/GitHub/dotfiles/scripts/run-playbook.sh --tags apps,config
-```
-
-## Repo layout
-
-Only deliberately-authored, non-personal files are in this repo.
-Everything generated from your machine lives in iCloud Drive at
-`~/Library/Mobile Documents/com~apple~CloudDocs/dotfiles-private/`.
+## Repo Layout
 
 ```
-dotfiles/                         ← public repo (github.com/beauwoods/dotfiles)
-├── DECISIONS.md                  # Why things are the way they are
-├── MANUAL_STEPS.md               # Full deployment day runbook
-├── ansible/
-│   ├── ansible.cfg               # Interpreter config, cleaner output, log path
-│   ├── main.yml                  # Top-level playbook (tagged by role)
-│   ├── requirements.yml          # Ansible Galaxy dependencies
-│   ├── inventory/
-│   ├── vars/main.yml             # Apps, URLs, osx_defaults — edit this
-│   └── roles/
-│       ├── system_defaults/      # osx_defaults settings
-│       ├── app_installs/         # Direct-download .dmg/.pkg/.zip installs
-│       ├── mas/                  # App Store installs via mas CLI
-│       └── app_config/           # Reads from iCloud private + deploys Firefox policy
+mac-config/                          (this repo)
+├── README.md
+├── config.yml                       ← overrides Geerling's default.config.yml
+├── requirements.yml                 ← Ansible Galaxy dependencies
+├── scripts/
+│   ├── bootstrap.sh                 ← curl-able one-command setup
+│   └── preflight.sh                 ← run on old machine before deployment
+├── tasks/
+│   ├── extra-packages.yml           ← dispatcher (Geerling imports this)
+│   ├── osx-defaults.yml             ← all macOS preferences
+│   ├── remove-bundled-apps.yml      ← removes GarageBand, iMovie, etc.
+│   ├── firefox-policy.yml           ← deploys policies.json
+│   ├── little-snitch.yml            ← write-preference commands
+│   ├── ssh-config.yml               ← restores SSH + dotfiles from iCloud
+│   └── dock-folders.yml             ← adds Timing, Desktop, Downloads to Dock
 ├── configs/
-│   ├── firefox/                  # policies.json (enterprise policy, no personal data)
-│   └── ssh/README.md             # 1Password SSH agent setup docs
-└── scripts/
-    ├── bootstrap.sh              # Run first on new machine (curl-able)
-    ├── preflight.sh              # Run on old machine before deployment day
-    └── run-playbook.sh           # Wrapper for all manual Ansible re-runs
+│   └── firefox/
+│       └── policies.json            ← Firefox enterprise policy
+└── docs/
+    └── MANUAL_PAUSE.md              ← steps shown during the pause
 
-dotfiles-private/                 ← iCloud Drive (never in this repo)
-├── ssh/config                    # SSH config with host aliases
-├── ssh/*.pub                     # Old machine's public keys (reference)
-├── shell/                        # .gitconfig, .zshrc, etc.
-├── mail/signatures.md            # Email signature HTML
-├── iterm2/                       # iTerm2 profile (.plist)
-├── istat/                        # iStat Menus preferences
-├── defaults_capture.txt          # System settings reference from old machine
-└── installed_apps.txt            # App inventory from old machine
+dotfiles-private/                    (iCloud Drive, never in this repo)
+├── ssh/config
+├── shell/                           ← .zshrc, .gitconfig, etc.
+├── iterm2/                          ← iTerm2 profile
+├── istat/                           ← iStat Menus preferences
+└── mail/signatures.md
 ```
 
-## What's automated
+## How It Works
+
+Bootstrap clones Geerling's playbook and symlinks our `config.yml` and
+individual task files into it. Geerling's `main.yml` loads our config
+(overriding his defaults) and imports our `tasks/extra-packages.yml`
+(which dispatches to our custom task files).
+
+Phase separation uses Ansible tags:
+- `--skip-tags post-auth` runs everything except post-auth tasks
+- `--tags post-auth` runs only the tasks that need manual setup first
+
+## Re-running
+
+From `~/mac-dev-playbook`:
+
+```bash
+# Full Phase 1 again
+ansible-playbook main.yml --ask-become-pass --skip-tags post-auth
+
+# Full Phase 2 again
+ansible-playbook main.yml --ask-become-pass --tags post-auth
+
+# Just macOS defaults
+ansible-playbook main.yml --ask-become-pass --tags extra-packages --skip-tags post-auth
+
+# Just Dock
+ansible-playbook main.yml --ask-become-pass --tags dock
+```
+
+## SSH Keys (post-bootstrap)
+
+Not automated — inherently interactive and one-per-machine:
+
+```bash
+ssh-keygen -t ed25519 -C "$(hostname)-$(date +%Y-%m)"
+# Store private key in 1Password → New Item → SSH Key → import ~/.ssh/id_ed25519
+rm ~/.ssh/id_ed25519
+# Add ~/.ssh/id_ed25519.pub to GitHub Settings → SSH Keys
+ssh -T git@github.com
+git -C ~/mac-config remote set-url origin git@github.com:beauwoods/mac-config.git
+```
+
+## What's Automated
 
 | Area | How |
 |---|---|
-| App Store apps | `mas` CLI via `mas_apps` in `vars/main.yml` |
-| Direct-download apps | `get_url` + `hdiutil`/`installer`/`unarchive` |
-| macOS settings | `osx_defaults` module — see `vars/main.yml` for full list with rationale |
-| Shell dotfiles | Copied from iCloud private → `~/` |
-| SSH config | Copied from iCloud private → `~/.ssh/config` |
-| Firefox | `policies.json` deployed to `/Library/Application Support/Mozilla/` |
-| Little Snitch prefs | `littlesnitch write-preference` via app_config role |
-| Little Snitch rules | Subscriptions added manually via GUI (LS6 has no CLI subscribe command) |
-| iTerm2 | `PrefsCustomFolder` pointed at iCloud private `iterm2/` directory |
-
-## osx_defaults catalogue
-
-All automated system settings are in `ansible/vars/main.yml` under `osx_defaults`,
-each with an inline comment explaining what it does and what macOS defaults to
-without it. Settings are grouped by area:
-
-- **Trackpad** — tap to click, scroll direction, click force thresholds
-- **Finder** — show all file extensions
-- **Clock & Units** — 24-hour clock, Celsius temperature
-- **Sound** — UI sounds off, Tink alert sound
-- **Mail** — archive on delete (remote image loading is set manually — requires Mail open)
-- **iTerm2** — prefs folder location (iCloud private)
-
-Settings intentionally *not* automated are documented at the bottom of the
-`osx_defaults` section in `vars/main.yml`.
+| CLI tools | Homebrew packages via Geerling's homebrew role |
+| GUI apps | Homebrew casks via Geerling's homebrew role |
+| App Store apps | `mas` CLI via Geerling's mas role |
+| Dock layout | Geerling's dock role + `dock-folders.yml` |
+| macOS preferences | `osx_defaults` module in `osx-defaults.yml` |
+| Shell dotfiles | Copied from iCloud private via `ssh-config.yml` |
+| SSH config | Copied from iCloud private via `ssh-config.yml` |
+| Firefox policy | `policies.json` deployed to `/Library/Application Support/Mozilla/` |
+| Little Snitch | `littlesnitch write-preference` commands |
+| iTerm2 | `PrefsCustomFolder` pointed at iCloud private |
+| Bundled app removal | GarageBand, iMovie, Pages, Numbers, Keynote |
 
 ## Logs
 
-Every run via `run-playbook.sh` or `bootstrap.sh` writes a timestamped log:
+Every bootstrap run writes a timestamped log:
 
 ```
-~/.local/share/dotfiles/logs/ansible_YYYYMMDD_HHMMSS_<tags>.log
+~/.local/share/mac-setup/logs/ansible_YYYYMMDD_HHMMSS.log
 ```
-
-To tail a run in progress:
-```bash
-tail -f ~/.local/share/dotfiles/logs/$(ls -t ~/.local/share/dotfiles/logs/ | head -1)
-```
-
-## See also
-
-- `DECISIONS.md` — tooling choices and rationale
-- `MANUAL_STEPS.md` — everything that can't be automated

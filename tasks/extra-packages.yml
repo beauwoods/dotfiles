@@ -1,0 +1,21 @@
+---
+# Phase 1 (run unattended — skipped via --skip-tags post-auth is not needed;
+# these run because they lack the post-auth tag)
+- import_tasks: osx-defaults.yml
+  tags: [extra-packages]
+
+- import_tasks: remove-bundled-apps.yml
+  tags: [extra-packages]
+
+# Phase 2 (only run after the pause, via --tags post-auth)
+- import_tasks: ssh-config.yml
+  tags: [post-auth]
+
+- import_tasks: firefox-policy.yml
+  tags: [post-auth]
+
+- import_tasks: little-snitch.yml
+  tags: [post-auth]
+
+- import_tasks: dock-folders.yml
+  tags: [post-auth]
