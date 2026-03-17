@@ -1,7 +1,6 @@
 ---
 # roles/mas/tasks/main.yml
 # Installs App Store apps via mas CLI.
-# Prerequisite: Must be signed into App Store (via Apple ID) before running.
 # mas 4.0+ requires sudo to install apps.
 
 - name: Check if mas is installed
@@ -13,36 +12,25 @@
 - name: Download and install mas if not present
   when: mas_which.rc != 0
   block:
-    - name: Resolve latest mas download URL via GitHub API
-      # mas uses versioned asset names (e.g. mas-6.0.1-arm64.pkg) so
-      # releases/latest/download/ doesn't work — query the API instead.
-      shell: |
-        curl -s https://api.github.com/repos/mas-cli/mas/releases/latest \
-          | python3 -c "
-        import sys, json
-        data = json.load(sys.stdin)
-        assets = [a for a in data.get('assets', [])
-                  if 'arm64' in a['name'] and a['name'].endswith('.pkg')]
-        if assets:
-            print(assets[0]['browser_download_url'])
-        else:
-            # Fallback: try any .pkg asset
-            pkgs = [a for a in data.get('assets', []) if a['name'].endswith('.pkg')]
-            print(pkgs[0]['browser_download_url'] if pkgs else '')
-        "
-      register: mas_url
-      changed_when: false
+    - name: Get latest mas release info from GitHub API
+      uri:
+        url: https://api.github.com/repos/mas-cli/mas/releases/latest
+        return_content: true
+        headers:
+          Accept: application/vnd.github+json
+      register: mas_release
 
-    - name: Fail clearly if no mas download URL found
-      fail:
-        msg: >
-          Could not resolve mas download URL from GitHub API.
-          Check https://github.com/mas-cli/mas/releases and set the URL manually.
-      when: mas_url.stdout == ""
+    - name: Find arm64 pkg asset URL
+      set_fact:
+        mas_pkg_url: >-
+          {{ mas_release.json.assets
+             | selectattr('name', 'match', '.*arm64.*\\.pkg$')
+             | map(attribute='browser_download_url')
+             | first }}
 
     - name: Download mas pkg
       get_url:
-        url: "{{ mas_url.stdout }}"
+        url: "{{ mas_pkg_url }}"
         dest: /tmp/mas.pkg
         mode: '0644'
 
@@ -60,7 +48,7 @@
       debug:
         msg: >
           WARNING: mas install failed. App Store apps will be skipped.
-          Install mas manually: https://github.com/mas-cli/mas/releases/latest
+          Check https://github.com/mas-cli/mas/releases/latest
 
 - name: Resolve mas binary path
   command: which mas

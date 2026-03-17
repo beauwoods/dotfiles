@@ -13,9 +13,6 @@
   register: app_check_alternate
   when: "'Adobe' in app.name"
 
-# FIX: use shell test so the result is a real boolean, not a Jinja2 string.
-# The set_fact approach with boolean `or` in Jinja2 produces a string "True"/"False"
-# which evaluates as truthy either way. This shell command returns 0/1 cleanly.
 - name: "Check if {{ app.name }} is installed (any path)"
   shell: |
     test -d "/Applications/{{ app.app_name }}" || \
@@ -27,63 +24,68 @@
   changed_when: false
   failed_when: false
 
-- name: "Resolve GitHub API URL for {{ app.name }}"
-  # Some apps use versioned/timestamped asset names that change every release.
-  # These use the sentinel url format: "github_api:owner/repo:ext:arch_keyword"
-  # This task queries the GitHub API and sets app_resolved_url.
-  shell: |
-    REPO="{{ app.url | regex_replace('^github_api:([^:]+):.*', '\\1') }}"
-    EXT="{{ app.url | regex_replace('^github_api:[^:]+:([^:]+):.*', '\\1') }}"
-    ARCH="{{ app.url | regex_replace('^github_api:[^:]+:[^:]+:(.*)', '\\1') }}"
-    curl -s "https://api.github.com/repos/${REPO}/releases/latest" \
-      | python3 -c "
-    import sys, json
-    data = json.load(sys.stdin)
-    assets = data.get('assets', [])
-    matches = [a for a in assets
-               if '${ARCH}' in a['name'].lower()
-               and a['name'].endswith('.${EXT}')]
-    if not matches:
-        matches = [a for a in assets if a['name'].endswith('.${EXT}')]
-    print(matches[0]['browser_download_url'] if matches else '')
-    "
-  register: github_api_url
-  changed_when: false
+# -----------------------------------------------------------------------
+# For apps whose asset filenames change every release (e.g. include version
+# numbers or timestamps), set github_release in vars/main.yml with the
+# format "owner/repo" and leave url blank. We resolve the URL here via the
+# GitHub API using Ansible's native uri module — no shell escaping required.
+# -----------------------------------------------------------------------
+- name: "Get latest release info for {{ app.name }} from GitHub API"
+  uri:
+    url: "https://api.github.com/repos/{{ app.github_release }}/releases/latest"
+    return_content: true
+    headers:
+      Accept: application/vnd.github+json
+  register: github_release_info
   when:
     - app_installed_check.rc != 0
-    - app.url.startswith('github_api:')
+    - app.github_release is defined
 
-- name: "Set resolved URL for {{ app.name }}"
+- name: "Resolve download URL for {{ app.name }} from GitHub release assets"
   set_fact:
-    app_resolved_url: "{{ github_api_url.stdout if (app.url.startswith('github_api:') and github_api_url is defined) else app.url }}"
-  when: app_installed_check.rc != 0
+    app_download_url: >-
+      {{ github_release_info.json.assets
+         | selectattr('name', 'match', '.*' + app.github_asset_pattern + '.*')
+         | map(attribute='browser_download_url')
+         | first }}
+  when:
+    - app_installed_check.rc != 0
+    - app.github_release is defined
+    - github_release_info is defined
+
+- name: "Set download URL for {{ app.name }} (static URL)"
+  set_fact:
+    app_download_url: "{{ app.url }}"
+  when:
+    - app_installed_check.rc != 0
+    - app.github_release is not defined
 
 - name: "Download {{ app.name }}"
   get_url:
-    url: "{{ app_resolved_url }}"
+    url: "{{ app_download_url }}"
     dest: "/tmp/{{ app.name | replace(' ', '_') }}.{{ app.type }}"
     mode: '0644'
   when:
     - app_installed_check.rc != 0
-    - app_resolved_url != ''
+    - app_download_url is defined
+    - app_download_url != ''
   register: download_result
   ignore_errors: true
 
 - name: "Warn and skip if download failed for {{ app.name }}"
   debug:
     msg: >
-      WARNING: Download failed for {{ app.name }} ({{ app_resolved_url | default(app.url) }}).
-      Skipping install — add it manually or check the URL in vars/main.yml.
+      WARNING: Download failed for {{ app.name }} ({{ app_download_url | default('URL not resolved') }}).
+      Skipping install — check the URL or github_release setting in vars/main.yml.
   when:
     - app_installed_check.rc != 0
-    - download_result is failed or app_resolved_url == ''
+    - download_result is failed or (app_download_url is not defined) or app_download_url == ''
 
 - name: "Install {{ app.name }} (dmg)"
   when:
     - app_installed_check.rc != 0
     - app.type == 'dmg'
     - download_result is succeeded
-    - app_resolved_url != ""
   block:
     - name: "Mount DMG for {{ app.name }}"
       command: >
@@ -123,7 +125,6 @@
         msg: >
           WARNING: Could not find {{ app.app_name }} or any .pkg in the
           mounted DMG for {{ app.name }}. Manual install required.
-          Run: hdiutil attach <dmg> and check /Volumes to see what mounted.
       when:
         - found_app.stdout == ""
         - found_pkg is not defined or found_pkg.stdout == ""
@@ -140,7 +141,6 @@
         msg: >
           WARNING: DMG install failed for {{ app.name }}.
           The downloaded file may not be a valid DMG, or the URL may have changed.
-          Check the URL in vars/main.yml and install manually if needed.
     - name: "Clean up failed DMG for {{ app.name }}"
       file:
         path: "/tmp/{{ app.name | replace(' ', '_') }}.dmg"
@@ -154,14 +154,12 @@
     - app_installed_check.rc != 0
     - app.type == 'pkg'
     - download_result is succeeded
-    - app_resolved_url != ""
 
 - name: "Install {{ app.name }} (zip)"
   when:
     - app_installed_check.rc != 0
     - app.type == 'zip'
     - download_result is succeeded
-    - app_resolved_url != ""
   block:
     - name: Unzip
       unarchive:
@@ -176,4 +174,3 @@
   when:
     - app_installed_check.rc != 0
     - download_result is succeeded
-    - app_resolved_url != ""

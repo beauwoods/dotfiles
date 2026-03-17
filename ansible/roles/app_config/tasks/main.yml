@@ -93,24 +93,19 @@
 # -----------------------------------------------------------------------
 # Little Snitch: subscribe to rule groups
 # -----------------------------------------------------------------------
-- name: Find Little Snitch CLI
-  shell: which littlesnitch 2>/dev/null || ls /usr/bin/littlesnitch 2>/dev/null || echo ""
-  register: ls_cli
-  changed_when: false
-  ignore_errors: true
-
-- name: Subscribe to Little Snitch rule groups
-  command: "{{ ls_cli.stdout }} subscribe '{{ item }}'"
-  loop: "{{ little_snitch_rule_subscriptions }}"
-  when: ls_cli.stdout != ""
-  ignore_errors: true
-
-- name: Note if Little Snitch CLI not found
+# NOTE: Little Snitch 6 has no CLI command for subscribing to rule groups.
+# Subscriptions must be added via the GUI:
+#   Rule Groups (sidebar) > + > Subscribe to Rule Group
+# The URLs to subscribe to are listed in little_snitch_rule_subscriptions
+# in vars/main.yml. This task prints them for reference.
+- name: Print Little Snitch rule group subscription URLs
   debug:
     msg: >
-      Little Snitch CLI not found — rule subscriptions skipped.
-      Install and license Little Snitch, then re-run: --tags config
-  when: ls_cli.stdout == ""
+      Add these rule group subscriptions manually in Little Snitch:
+      Rule Groups > + > Subscribe to Rule Group
+      {% for url in little_snitch_rule_subscriptions %}
+      - {{ url }}
+      {% endfor %}
 
 # -----------------------------------------------------------------------
 # iTerm2: point at dotfiles profile (from repo — no personal data)

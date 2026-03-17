@@ -148,12 +148,13 @@ direct_apps:
     # Using downloads.videolan.org (more stable than get.videolan.org CDN)
 
   - name: "Bambu Studio"
-    # Filename changes every release (includes version + timestamp), so we
-    # resolve the URL dynamically via GitHub API at install time.
-    url: "github_api:bambulab/BambuStudio:dmg:arm64"
+    github_release: "bambulab/BambuStudio"
+    github_asset_pattern: "mac-arm64\\.dmg$"
     type: dmg
     app_name: "Bambu Studio.app"
-    # NOTE: Not on Mac App Store.
+    url: ""
+    # NOTE: Asset filename changes every release (includes version + timestamp).
+    # github_release triggers GitHub API lookup at install time — no URL to maintain.
 
   - name: "Little Snitch"
     url: "https://www.obdev.at/downloads/littlesnitch/LittleSnitch-6.3.3.dmg"
