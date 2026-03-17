@@ -1,13 +1,17 @@
 #!/bin/bash
 # bootstrap.sh
 # Run this once on a fresh Mac before the Ansible playbook.
-# Installs the minimum prerequisites needed to run Ansible.
+#
+# Usage (no repo needed — downloads itself):
+#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/beauwoods/dotfiles/main/scripts/bootstrap.sh)"
+#
+# Or if you already have the repo cloned:
+#   ~/Documents/GitHub/dotfiles/scripts/bootstrap.sh
 
 set -euo pipefail
 
-# Cache sudo credentials upfront — several steps need root (Xcode tools install,
-# Ansible become tasks, Galaxy role install). Doing this once at the start means
-# you can walk away after entering your password.
+# Cache sudo credentials upfront — several steps need root.
+# Entering password once here means you can walk away for the rest.
 echo "This script needs sudo access. Please enter your password now."
 sudo -v
 # Keep-alive: refresh sudo timestamp every 60s until script exits
@@ -18,7 +22,7 @@ trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Step 1: Install Xcode Command Line Tools"
-echo "    (required for git, which is needed to clone the dotfiles repo)"
+echo "    (provides git, python3, and compiler tools needed for everything else)"
 
 if xcode-select -p &>/dev/null; then
   echo "    Already installed at: $(xcode-select -p)"
@@ -26,8 +30,8 @@ else
   xcode-select --install 2>/dev/null || true
   echo ""
   echo "    A dialog has appeared asking you to install the Command Line Tools."
-  echo "    Click 'Install' and wait for it to finish, then press Enter here."
-  echo "    (Do not click 'Get Xcode' — just 'Install')"
+  echo "    Click 'Install' and wait for it to finish."
+  echo "    Do NOT click 'Get Xcode' — just 'Install'."
   echo ""
   WAIT=0
   TIMEOUT=600
@@ -37,8 +41,9 @@ else
     echo -n "."
     if [ "$WAIT" -ge "$TIMEOUT" ]; then
       echo ""
-      echo "ERROR: Timed out waiting for Xcode CLI tools after ${TIMEOUT}s."
-      echo "Install manually: xcode-select --install — then re-run this script."
+      echo "ERROR: Timed out after ${TIMEOUT}s waiting for Xcode CLI tools."
+      echo "Install manually with: xcode-select --install"
+      echo "Then re-run this script."
       exit 1
     fi
   done
@@ -53,7 +58,7 @@ DOTFILES_DIR="$HOME/Documents/GitHub/dotfiles"
 REPO_URL="https://github.com/beauwoods/dotfiles.git"
 
 if [ -d "$DOTFILES_DIR/.git" ]; then
-  echo "    Repo already exists at $DOTFILES_DIR — pulling latest..."
+  echo "    Repo already exists — pulling latest..."
   git -C "$DOTFILES_DIR" pull --ff-only
   echo "    Up to date."
 else
@@ -63,11 +68,10 @@ else
   echo "    Clone complete."
 fi
 
-# If this script was invoked via curl | bash, re-exec from the cloned copy
-# so the rest of the script benefits from any updates in the repo.
+# If invoked via curl | bash, re-exec from the cloned copy so the rest of
+# the script is the authoritative version from the repo.
 SELF="$DOTFILES_DIR/scripts/bootstrap.sh"
-if [ "$(realpath "$0" 2>/dev/null || echo "$0")" != "$(realpath "$SELF" 2>/dev/null || echo "$SELF")" ] \
-   && [ -f "$SELF" ]; then
+if [ "$0" != "$SELF" ] && [ -f "$SELF" ]; then
   echo ""
   echo "    Re-running from cloned repo: $SELF"
   exec bash "$SELF" "$@"
@@ -79,18 +83,18 @@ echo "==> Step 3: Install pending macOS software updates"
 echo "    This ensures the OS is fully patched before setup begins."
 echo ""
 
-# softwareupdate exits non-zero if there's nothing to install on some macOS
-# versions, so we append || true to prevent aborting under set -e.
-# We do NOT pass --restart: if a restart is required, softwareupdate will
-# say so and we handle it explicitly below rather than rebooting mid-script.
+# softwareupdate exits non-zero if no updates are available on some macOS
+# versions — || true prevents aborting under set -e.
+# --restart is intentionally omitted: if a restart is required we detect it
+# and ask you to restart manually, rather than rebooting mid-script.
 UPDATE_OUTPUT=$(softwareupdate --install --all 2>&1 || true)
 echo "$UPDATE_OUTPUT"
 
 if echo "$UPDATE_OUTPUT" | grep -qi "restart"; then
   echo ""
   echo "  *** A restart is required to finish installing updates. ***"
-  echo "  Please restart now, then re-run bootstrap.sh to continue."
-  echo "  (Run: ~/Documents/GitHub/dotfiles/scripts/bootstrap.sh)"
+  echo "  Please restart, then re-run bootstrap.sh:"
+  echo "    $SELF"
   exit 0
 else
   echo "  Updates complete (or none needed)."
@@ -99,13 +103,25 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Step 4: Install Ansible via pip3..."
-# --break-system-packages is required on macOS Sequoia (15+) where the system
-# Python is marked as externally managed. Harmless on earlier versions.
-python3 -m pip install --user ansible --break-system-packages
+
+# --break-system-packages is required on macOS Sequoia (15+) where Python is
+# marked as externally managed. Older pip versions don't know this flag, so
+# we try with it first and fall back without.
+if python3 -m pip install --user ansible --break-system-packages 2>/dev/null; then
+  echo "    Ansible installed."
+elif python3 -m pip install --user ansible 2>/dev/null; then
+  echo "    Ansible installed (without --break-system-packages)."
+else
+  echo "ERROR: pip install failed. Try manually:"
+  echo "  python3 -m pip install --user ansible"
+  exit 1
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Step 5: Install Ansible Galaxy roles..."
+
+# Resolve ansible-galaxy — pip --user installs to ~/Library/Python/X.Y/bin/
 GALAXY_BIN=""
 for candidate in \
     ~/.local/bin/ansible-galaxy \
@@ -122,8 +138,8 @@ if [ -z "$GALAXY_BIN" ]; then
 fi
 
 if [ -z "$GALAXY_BIN" ]; then
-  echo "WARNING: ansible-galaxy not found — skipping Galaxy role install."
-  echo "Run manually: ansible-galaxy install -r ansible/requirements.yml"
+  echo "WARNING: ansible-galaxy not found. Run manually after adding pip bin to PATH:"
+  echo "  ansible-galaxy install -r $DOTFILES_DIR/ansible/requirements.yml"
 else
   "$GALAXY_BIN" install -r "$DOTFILES_DIR/ansible/requirements.yml"
   echo "    Galaxy roles installed."
@@ -132,6 +148,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Step 6: Verify Ansible install..."
+
 PLAYBOOK_BIN=""
 for candidate in \
     ~/.local/bin/ansible-playbook \
@@ -148,25 +165,26 @@ if [ -z "$PLAYBOOK_BIN" ]; then
 fi
 
 if [ -z "$PLAYBOOK_BIN" ]; then
-  echo "WARNING: ansible-playbook not found in common locations."
-  echo "Try: python3 -m pip show ansible | grep Location"
+  echo "WARNING: ansible-playbook not found."
+  echo "Add pip's bin directory to your PATH, then re-run."
+  echo "  python3 -m pip show ansible | grep Location"
+  PLAYBOOK_BIN="ansible-playbook"
 else
   echo "Found: $PLAYBOOK_BIN"
-  "$PLAYBOOK_BIN" --version | head -1
+  "$PLAYBOOK_BIN" --version | head -1 || true
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo "==> Bootstrap complete."
 echo ""
-echo "Next steps:"
-echo "  1. Sign into the App Store (required for mas)"
-echo "  2. Complete the auth session in MANUAL_STEPS.md Stage 2"
-echo "  3. Run the playbook:"
-echo "       cd ~/Documents/GitHub/dotfiles/ansible"
-echo "       ${PLAYBOOK_BIN:-ansible-playbook} main.yml -i inventory/localhost --ask-become-pass"
+echo "Next steps (see MANUAL_STEPS.md for full detail):"
 echo ""
-echo "  To run a subset of the playbook, use tags:"
-echo "       ${PLAYBOOK_BIN:-ansible-playbook} main.yml -i inventory/localhost --ask-become-pass --tags defaults"
-echo "       ${PLAYBOOK_BIN:-ansible-playbook} main.yml -i inventory/localhost --ask-become-pass --tags mas"
-echo "       ${PLAYBOOK_BIN:-ansible-playbook} main.yml -i inventory/localhost --ask-become-pass --tags apps,config"
+echo "  Stage 2 — First Ansible run (apps + defaults, no auth needed):"
+echo "    cd $DOTFILES_DIR/ansible"
+echo "    $PLAYBOOK_BIN main.yml -i inventory/localhost --ask-become-pass --tags apps,defaults"
+echo ""
+echo "  Stage 3 — Auth session (App Store, 1Password, Adobe, SetApp, Little Snitch)"
+echo ""
+echo "  Stage 4 — Second Ansible run (App Store + config):"
+echo "    $PLAYBOOK_BIN main.yml -i inventory/localhost --ask-become-pass --tags mas,config"

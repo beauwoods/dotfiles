@@ -240,6 +240,45 @@ osx_defaults:
     type: bool
     value: true
 
+  # Show hidden files in Finder — useful for dotfiles work
+  - domain: "com.apple.finder"
+    key: "AppleShowAllFiles"
+    type: bool
+    value: true
+
+  # Show path bar at bottom of Finder windows
+  - domain: "com.apple.finder"
+    key: "ShowPathbar"
+    type: bool
+    value: true
+
+  # Show status bar at bottom of Finder windows (item count, disk space)
+  - domain: "com.apple.finder"
+    key: "ShowStatusBar"
+    type: bool
+    value: true
+
+  # Default Finder view: list view (Nlsv) rather than icon view (icnv)
+  - domain: "com.apple.finder"
+    key: "FXPreferredViewStyle"
+    type: string
+    value: "Nlsv"
+
+  # Disable the warning when changing a file extension
+  - domain: "com.apple.finder"
+    key: "FXEnableExtensionChangeWarning"
+    type: bool
+    value: false
+
+  # ── Desktop ─────────────────────────────────────────────────────────────
+  # Disable click-to-show Desktop (Stage Manager behavior — annoying when
+  # you accidentally click the desktop and all windows hide)
+  # From: Jeff Geerling's full-mac-setup.md
+  - domain: "com.apple.WindowManager"
+    key: "EnableStandardClickToShowDesktop"
+    type: bool
+    value: false
+
   # ── Clock & Units ────────────────────────────────────────────────────────
   # 24-hour clock — fresh macOS defaults to 12-hour with AM/PM
   - domain: "NSGlobalDomain"
@@ -299,3 +338,5 @@ osx_defaults:
   # Dock size/position — set via System Settings, personal preference
   # Menu bar items — set after apps install, order varies
   # Text replacements (NSUserDictionaryReplacementItems) — synced via iCloud
+  # Caps Lock → Escape remap — set via System Settings > Keyboard > Key Mappings
+  # Key repeat rate — set via System Settings > Keyboard (slider, not a defaults key)
