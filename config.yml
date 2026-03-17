@@ -7,6 +7,7 @@ homebrew_installed_packages:
   - mas      # App Store CLI
   - wget
   - nmap
+  - dockutil  # needed by Geerling's dock role and our dock-folders.yml
 
 # ─── Homebrew: GUI apps (casks) ───────────────────────────────────────────────
 homebrew_cask_apps:
@@ -39,7 +40,8 @@ homebrew_cask_apps:
 
   # Security
   - little-snitch           # needs: license entry + terminal access (MANUAL_PAUSE.md)
-  - wireshark               # needs: access_bpf group (handled in osx-defaults.yml)
+  # wireshark — installed in bootstrap.sh (its post-install .pkg needs
+  # interactive sudo that Ansible can't provide)
 
   # Storage / backup
   - backblaze

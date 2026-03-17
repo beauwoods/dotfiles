@@ -1,6 +1,6 @@
 ---
 # Runs post-auth, after SetApp is installed and Timing has been added inside it.
-# dockutil is already available — Geerling's dock role installs it.
+# dockutil is in homebrew_installed_packages (config.yml).
 
 - name: Add Timing to Dock (SetApp must be set up first)
   command: >

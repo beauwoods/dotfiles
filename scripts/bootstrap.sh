@@ -51,7 +51,8 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 # Some casks run .pkg installers with sudo internally. Ansible has no
 # TTY, so those fail and block the entire play. Install them here
 # (with TTY access) so Ansible sees them as already installed.
-brew install --cask wireshark 2>/dev/null || true
+echo "$SUDO_PASS" | sudo -S -v 2>/dev/null   # refresh sudo timestamp
+brew install --cask wireshark || true
 
 # ── Ansible ───────────────────────────────────────────────────────────
 # pip3 installs binaries to a user-local dir not on PATH by default
